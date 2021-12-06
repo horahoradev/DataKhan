@@ -2,19 +2,32 @@ package dkmetrics
 
 import (
 	"context"
-	"fmt"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
-	"github.com/go-kit/kit/metrics/graphite"
-	"logrus"
+	"github.com/go-kit/kit/metrics/statsd"
+	"os"
 	"time"
 )
 
-func StartExporter(ctx context.Context) error {
-	g := graphite.New("", nil)
+var stats *statsd.Statsd
+
+func StartExporter(ctx context.Context) {
+	logger := log.NewLogfmtLogger(os.Stderr)
+	logger = log.NewSyncLogger(logger)
+	logger = level.NewFilter(logger, level.AllowDebug())
+	logger = log.With(logger,
+		"svc", "order",
+		"ts", log.DefaultTimestampUTC,
+		"caller", log.DefaultCaller,
+	)
+
+	stats = statsd.New("DataKhan", logger)
 	report := time.NewTicker(5 * time.Second)
 	//defer report.Stop()
-	go g.SendLoop(context.Background(), report.C, "tcp", "graphite:8125")
+	go stats.SendLoop(context.Background(), report.C, "udp", "graphite:8125")
 }
 
 func MockCounter(name string) metrics.Counter {
@@ -22,5 +35,5 @@ func MockCounter(name string) metrics.Counter {
 }
 
 func ConcreteCounter(name string) metrics.Counter {
-	return graphite.NewCounter(name)
+	return stats.NewCounter(name, 1.00)
 }

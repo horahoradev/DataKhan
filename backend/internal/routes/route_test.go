@@ -2,8 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/discard"
 	dkmetrics "github.com/horahoradev/DataKhan/backend/internal/metrics"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"

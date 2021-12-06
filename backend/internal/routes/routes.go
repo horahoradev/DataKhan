@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/graphite"
 	dkmetrics "github.com/horahoradev/DataKhan/backend/internal/metrics"
 	echo "github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"io/ioutil"
 	"net/url"
 )
@@ -41,7 +41,10 @@ func (r *RouteHandler) handleView(c echo.Context) error {
 	}
 
 	// Increment the number of requests for path
-	r.CreateCounter(fmt.Sprintf("%s.NumberRequests;path=%s;useragent=%s;ip=%s", uri.Hostname(), uri.Path, parsed.Useragent, parsed.IP))
+	r.CreateCounter(fmt.Sprintf(".%s.NumberRequests;path=%s;useragent=%s;ip=%s", uri.Hostname(), uri.Path, parsed.Useragent, parsed.IP)).Add(1)
+	r.CreateCounter("."+uri.Hostname()+".NumberRequests").With("path", uri.Path).Add(1)
+
+	log.Infof("Created counter for website %s", uri.Hostname())
 	return nil
 	// TODO
 }
