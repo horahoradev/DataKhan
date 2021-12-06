@@ -2,8 +2,10 @@ package routes
 
 import (
 	"encoding/json"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/discard"
+	dkmetrics "github.com/horahoradev/DataKhan/backend/internal/metrics"
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 
 	"net/http"
@@ -35,11 +37,9 @@ func TestView(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		r := NewRouteHandler()
+		r := NewRouteHandler(dkmetrics.MockCounter)
 
 		assert.NoError(t, r.handleView(c))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, 1, testutil.CollectAndCount(r.RequestCounter))
-		assert.Equal(t, float64(1), testutil.ToFloat64(r.RequestCounter.WithLabelValues("mywebsite.com", "/datakhan", "127.0.0.1", "whatever")))
 	}
 }

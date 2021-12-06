@@ -2,27 +2,22 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/graphite"
+	dkmetrics "github.com/horahoradev/DataKhan/backend/internal/metrics"
 	echo "github.com/labstack/echo/v4"
-	prometheus "github.com/prometheus/client_golang/prometheus"
 	"io/ioutil"
 	"net/url"
 )
 
 type RouteHandler struct {
-	RequestCounter *prometheus.CounterVec
+	CreateCounter func(name string) metrics.Counter
 }
 
-func NewRouteHandler() RouteHandler {
-	c := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "ViewStats",
-		//Subsystem:   subsystem,
-		Name: "Number_of_Requests",
-		Help: "The total number of requests received",
-		//ConstLabels:
-	}, []string{"URI", "Path", "IP", "UserAgent"})
-	prometheus.MustRegister(c)
+func NewRouteHandler(createCounter func(name string) metrics.Counter) RouteHandler {
 
-	return RouteHandler{c}
+	return RouteHandler{CreateCounter: createCounter}
 }
 
 type ViewObj struct {
@@ -45,10 +40,8 @@ func (r *RouteHandler) handleView(c echo.Context) error {
 		return err
 	}
 
-	// Increment the number of requests
-	requestLabels := []string{uri.Hostname(), uri.Path, parsed.IP, parsed.Useragent}
-	r.RequestCounter.WithLabelValues(requestLabels...).Add(1)
-
+	// Increment the number of requests for path
+	r.CreateCounter(fmt.Sprintf("%s.NumberRequests;path=%s;useragent=%s;ip=%s", uri.Hostname(), uri.Path, parsed.Useragent, parsed.IP))
 	return nil
 	// TODO
 }
@@ -58,7 +51,7 @@ func (r *RouteHandler) handleEvent(c echo.Context) error {
 }
 
 func SetupRoutes(e *echo.Echo) {
-	r := NewRouteHandler()
+	r := NewRouteHandler(dkmetrics.ConcreteCounter)
 
 	e.POST("/view/", r.handleView)
 	e.POST("/event/", r.handleEvent)

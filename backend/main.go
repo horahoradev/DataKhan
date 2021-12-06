@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	dkmetrics "github.com/horahoradev/DataKhan/backend/internal/metrics"
 	"github.com/horahoradev/DataKhan/backend/internal/routes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,7 +18,8 @@ func main() {
 
 	e.Use(middleware.Logger())
 
-	routes.SetupRoutes(e)
+	go dkmetrics.StartExporter(context.TODO())
 
+	routes.SetupRoutes(e)
 	e.Logger.Fatal(e.Start(":8080"))
 }
